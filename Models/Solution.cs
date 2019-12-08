@@ -26,63 +26,63 @@ namespace PhotoSlideshow.Models
         public void HillClimbing(int numberOfIterations)
         {
             Random random = new Random();
-            List<int> randomNumbers = new List<int>();
+            List<int> randomNo = new List<int>();
             for (int i = 0; i < this.Slides.Count(); i++)
             {
-                randomNumbers.Add(i);
+                randomNo.Add(i);
             }
 
             for (int i = 0; i < numberOfIterations; i++)
             {
-                List<Slide> tempSolution = this.Slides;
-                List<int> slidesToSwap = randomNumbers.OrderBy(x => random.Next()).Take(2).ToList();
+                List<Slide> Solutiontmp = this.Slides;
+                List<int> SwapSlides = randomNo.OrderBy(x => random.Next()).Take(2).ToList();
 
-                Slide tempSlide = tempSolution[slidesToSwap.FirstOrDefault()];
-                tempSolution[slidesToSwap.FirstOrDefault()] = tempSolution[slidesToSwap.LastOrDefault()];
-                tempSolution[slidesToSwap.LastOrDefault()] = tempSlide;
+                Slide tempSlide = Solutiontmp[SwapSlides.FirstOrDefault()];
+                Solutiontmp[SwapSlides.FirstOrDefault()] = Solutiontmp[SwapSlides.LastOrDefault()];
+                Solutiontmp[SwapSlides.LastOrDefault()] = tempSlide;
 
-                int currentInterestFactor = CalculateInterestFactor(tempSolution);
+                int currentInterestFactor = CalculateInterestFactor(Solutiontmp);
                 if (currentInterestFactor > this.InterestFactor)
                 {
-                    this.Slides = tempSolution;
+                    this.Slides = Solutiontmp;
                     this.InterestFactor = currentInterestFactor;
                 }
             }
         }
 
-        public void GenerateRandomSolution(List<Photo> photos)
+        public void RandomSolutionGenerate(List<Photo> photos)
         {
-            List<int> photosToSkip = new List<int>();
+            List<int> SkipPhotos = new List<int>();
             for (int i = 0; i < photos.Count; i++)
             {
-                if (photosToSkip.Any(x => x == photos[i].Id))
+                if (SkipPhotos.Any(x => x == photos[i].Id))
                 {
                     continue;
                 }
 
-                List<Photo> photosToAdd = new List<Photo>()
+                List<Photo> AddPhotos = new List<Photo>()
                 {
                     photos[i]
                 };
 
                 if (photos[i].Orientation == Orientation.V)
                 {
-                    Photo photo = photos.Skip(i + 1).Where(x => x.Orientation.Equals(Orientation.V) && !photosToSkip.Contains(x.Id))
-                    .OrderByDescending(x => x.Tags.Where(t => !photos[i].Tags.Contains(t)).Count()).FirstOrDefault();
+                   
+                    Photo secondphoto = photos.Skip(i + 1).Where(x => x.Orientation.Equals(Orientation.V) && !SkipPhotos.Contains(x.Id)).FirstOrDefault();
 
-                    if (photo != null)
+                    if (secondphoto != null)
                     {
-                        photosToAdd.Add(photo);
-                        photosToSkip.Add(photo.Id);
+                        AddPhotos.Add(secondphoto);
+                        SkipPhotos.Add(secondphoto.Id);
                     }
                 }
-                this.Slides.Add(new Slide(photosToAdd));
+                this.Slides.Add(new Slide(AddPhotos));
             }
         }
 
         public int CalculateInterestFactor(List<Slide> slides)
         {
-            int interestFactor = 0;
+            int interestFactor = 0; 
             for (int i = 0; i < slides.Count - 1; i++)
             {
                 int commonTags = CalculateCommonSlideTags(slides[i], slides[i + 1]);
@@ -103,7 +103,7 @@ namespace PhotoSlideshow.Models
             return slideA.Tags.Where(x => !slideB.Tags.Contains(x)).Count();
         }
 
-        public void GenerateOutputFile(string filename)
+        public void OutputFileGenerate(string filename)
         {
             using (StreamWriter file = new StreamWriter(new FileStream(filename, FileMode.CreateNew)))
             {

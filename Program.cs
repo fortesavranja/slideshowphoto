@@ -11,27 +11,22 @@ namespace PhotoSlideshow
     {
         static void Main(string[] args)
         {
-            int fileToRead = 0;
-            int numberOfIterations = 500;
+           
 
             Solution solution = new Solution();
             Random random = new Random();
-            
 
             string[] files = Directory.GetFiles($"Samples", "*.txt");
 
             List<Slide> slides = new List<Slide>();
-            Instance instance = Extensions.IO.ReadInput(files[fileToRead]);
+            Instance instance = Extensions.IO.ReadInput(files[2]);
 
-            Console.WriteLine($"Number of photos: {instance.NumberOfPhotos}\n");
-
-            solution.GenerateRandomSolution(instance.Photos.OrderBy(x => random.Next()).ToList());
+            solution.RandomSolutionGenerate(instance.Photos); 
             solution.InterestFactor = solution.CalculateInterestFactor(solution.Slides);
-            solution.HillClimbing(numberOfIterations);
-            solution.GenerateOutputFile($"{Path.GetFileNameWithoutExtension(files[fileToRead])}_result_{DateTime.Now.Ticks}.txt");
+            solution.HillClimbing(500);
+            solution.OutputFileGenerate($"{Path.GetFileNameWithoutExtension(files[2])}_result_{DateTime.Now.Ticks}.txt");
 
-            Console.WriteLine($"Number of slides: { solution.Slides.Count() }\n");
-            Console.WriteLine($"Interest Factor: { solution.InterestFactor }");
+            Console.WriteLine($"Number of slides are: { solution.Slides.Count() } , Interest Factor is: { solution.InterestFactor }");
             Console.ReadKey();
         }
     }
