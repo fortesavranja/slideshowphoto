@@ -13,20 +13,62 @@ namespace PhotoSlideshow.Models
         public void HillClimbing(int numberOfIterations, SolutionSlide slide)
         {
             Random random = new Random();
-            List<int> randomNo = new List<int>();
+            List<int> randomNumbers = new List<int>();
             for (int i = 0; i < slide.Slides.Count(); i++)
             {
-                randomNo.Add(i);
+                randomNumbers.Add(i);
             }
 
             for (int i = 0; i < numberOfIterations; i++)
             {
                 List<Slide> Solutiontmp = slide.Slides;
-                List<int> SwapSlides = randomNo.OrderBy(x => random.Next()).Take(2).ToList();
+                int swapOrChange = random.Next(0, 9);
+                List<int> slidesToSwap = Solutiontmp.Where(x => x.Photos.Count == 2).OrderBy(x => random.Next()).Select(x => x.Id).Take(2).ToList();
 
-                Slide tempSlide = Solutiontmp[SwapSlides.FirstOrDefault()];
-                Solutiontmp[SwapSlides.FirstOrDefault()] = Solutiontmp[SwapSlides.LastOrDefault()];
-                Solutiontmp[SwapSlides.LastOrDefault()] = tempSlide;
+                if (swapOrChange < 3 && slidesToSwap.Count == 2)
+                {
+                    int firstSlidePhotoIndex = random.Next(0, 2);
+                    int secondSlidePhotoIndex = random.Next(0, 2);
+
+                    int firstSlideIndex = Solutiontmp.IndexOf(Solutiontmp.FirstOrDefault(x => x.Id == slidesToSwap.FirstOrDefault()));
+                    int secondSlideIndex = Solutiontmp.IndexOf(Solutiontmp.FirstOrDefault(x => x.Id == slidesToSwap.LastOrDefault()));
+
+                    List<Photo> firstSlidePhotos = new List<Photo>
+                {
+                    new Photo(Solutiontmp[firstSlideIndex].Photos.FirstOrDefault().Id, Orientation.V, new List<string>(Solutiontmp[firstSlideIndex].Photos.FirstOrDefault().Tags)),
+                    new Photo(Solutiontmp[firstSlideIndex].Photos.LastOrDefault().Id, Orientation.V, new List<string>(Solutiontmp[firstSlideIndex].Photos.LastOrDefault().Tags))
+                };
+
+                    List<Photo> secondSlidePhotos = new List<Photo>
+                {
+                    new Photo(Solutiontmp[secondSlideIndex].Photos.FirstOrDefault().Id, Orientation.V, new List<string>(Solutiontmp[secondSlideIndex].Photos.FirstOrDefault().Tags)),
+                    new Photo(Solutiontmp[secondSlideIndex].Photos.LastOrDefault().Id, Orientation.V, new List<string>(Solutiontmp[secondSlideIndex].Photos.LastOrDefault().Tags))
+                };
+
+                    Slide slideA = new Slide(Solutiontmp[firstSlideIndex].Id, firstSlidePhotos);
+                    Slide slideB = new Slide(Solutiontmp[secondSlideIndex].Id, secondSlidePhotos);
+
+                    slideA.Photos[firstSlidePhotoIndex] = Solutiontmp[secondSlideIndex].Photos[secondSlidePhotoIndex];
+                    slideB.Photos[secondSlidePhotoIndex] = Solutiontmp[firstSlideIndex].Photos[firstSlidePhotoIndex];
+
+                    Solutiontmp[firstSlideIndex] = slideA;
+                    Solutiontmp[secondSlideIndex] = slideB;
+                }
+                else if (swapOrChange < 7)
+                {
+                    slidesToSwap = randomNumbers.OrderBy(x => random.Next()).Take(2).ToList();
+
+                    Slide tempSlide = Solutiontmp[slidesToSwap.FirstOrDefault()];
+                    Solutiontmp[slidesToSwap.FirstOrDefault()] = Solutiontmp[slidesToSwap.LastOrDefault()];
+                    Solutiontmp[slidesToSwap.LastOrDefault()] = tempSlide;
+                }
+                else
+                {
+                    slidesToSwap = randomNumbers.OrderBy(x => random.Next()).Take(2).ToList();
+                    Slide sld = Solutiontmp[slidesToSwap.FirstOrDefault()];
+                    Solutiontmp.RemoveAt(slidesToSwap.FirstOrDefault());
+                    Solutiontmp.Insert(slidesToSwap.LastOrDefault(), sld);
+                }
 
                 int currentInterestFactor = CalculateInterestFactor(Solutiontmp);
                 if (currentInterestFactor > slide.InterestFactor)
@@ -73,6 +115,8 @@ namespace PhotoSlideshow.Models
 
         public void RandomSolutionGenerate(List<Photo> photos, SolutionSlide slide)
         {
+            int slideId = 0;
+            Random random = new Random();
             List<int> SkipPhotos = new List<int>();
             for (int i = 0; i < photos.Count; i++)
             {
@@ -95,7 +139,10 @@ namespace PhotoSlideshow.Models
                         SkipPhotos.Add(secondphoto.Id);
                     }
                 }
-                slide.Slides.Add(new Slide(AddPhotos));
+                
+                slide.Slides.Add(new Slide(slideId, AddPhotos));
+                slideId++;
+
             }
         }
 

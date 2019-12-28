@@ -32,7 +32,6 @@ namespace PhotoSlideshow
             solution.OutputFileGenerate($"{Path.GetFileNameWithoutExtension(files[2])}_result_{DateTime.Now.Ticks}.txt", bestSolution);
             Console.WriteLine($"Number of slides are: { bestSolution.Slides.Count() } , Interest Factor is: { bestSolution.InterestFactor }");
 
-
             Console.ReadKey();
         }
     }
