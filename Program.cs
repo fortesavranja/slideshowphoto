@@ -15,7 +15,7 @@ namespace PhotoSlideshow
             Solution solution = new Solution();
             Random random = new Random();
             Stopwatch stopwatch = new Stopwatch();
-            int timeToRun = 5;
+            int timeToRun = 1;
 
 
             string[] files = Directory.GetFiles($"Samples", "*.txt");
@@ -34,6 +34,11 @@ namespace PhotoSlideshow
 
             solution.GenerateSolutionWithHeuristic(instance.Photos.OrderBy(x => x.Orientation).ThenBy(x => random.Next()).ToList(), stopwatch, timeToRun, 3000);
             SolutionSlide bestSolution = solution.ScatterSearch(instance.Photos, stopwatch, timeToRun);
+            if (bestSolution.InterestFactor < 0)
+            {
+                bestSolution.InterestFactor = solution.CalculateInterestFactor(solution.Slides);
+            }
+
             solution.OutputFileGenerate($"{Path.GetFileNameWithoutExtension(files[4])}_result_{DateTime.Now.Ticks}.txt", bestSolution);
             Console.WriteLine($"Number of slides are: { bestSolution.Slides.Count() } , Interest Factor is: { bestSolution.InterestFactor }");
 

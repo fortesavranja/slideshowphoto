@@ -99,8 +99,6 @@ namespace PhotoSlideshow.Models
             SolutionSlide best = new SolutionSlide();
             List<SolutionSlide> P = new List<SolutionSlide>();
       
-
-
             for (int i = 0; i < initsize && temp < epsilon && stopwatch.Elapsed.TotalMinutes < timeToRun; i++)
             {
                 P.Add(new SolutionSlide());
