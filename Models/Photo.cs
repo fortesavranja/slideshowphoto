@@ -13,6 +13,10 @@ namespace PhotoSlideshow.Models
             Tags = tags;
         }
 
+        public Photo()
+        {
+        }
+
         public int Id { get; set; }
         public Orientation Orientation { get; set; }
         public List<string> Tags { get; set; }

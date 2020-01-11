@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -8,10 +9,16 @@ namespace PhotoSlideshow.Models
 {
     public class Solution
     {
+        public List<Slide> Slides { get; set; }
+        public Solution()
+        {
+            this.Slides = new List<Slide>();
+        }
         #region [Functions]
 
-        public void HillClimbing(int numberOfIterations, SolutionSlide slide)
+        public void HillClimbing(int numberOfIterations, SolutionSlide slide, Stopwatch stopwatch, int timeToRun)
         {
+            
             Random random = new Random();
             List<int> randomNumbers = new List<int>();
             for (int i = 0; i < slide.Slides.Count(); i++)
@@ -19,12 +26,13 @@ namespace PhotoSlideshow.Models
                 randomNumbers.Add(i);
             }
 
-            for (int i = 0; i < numberOfIterations; i++)
+            for (int i = 0; i < numberOfIterations && stopwatch.Elapsed.TotalMinutes < timeToRun; i++)
             {
                 List<Slide> Solutiontmp = slide.Slides;
                 int swapOrChange = random.Next(0, 9);
                 List<int> slidesToSwap = Solutiontmp.Where(x => x.Photos.Count == 2).OrderBy(x => random.Next()).Select(x => x.Id).Take(2).ToList();
 
+              
                 if (swapOrChange < 3 && slidesToSwap.Count == 2)
                 {
                     int firstSlidePhotoIndex = random.Next(0, 2);
@@ -38,7 +46,6 @@ namespace PhotoSlideshow.Models
                     new Photo(Solutiontmp[firstSlideIndex].Photos.FirstOrDefault().Id, Orientation.V, new List<string>(Solutiontmp[firstSlideIndex].Photos.FirstOrDefault().Tags)),
                     new Photo(Solutiontmp[firstSlideIndex].Photos.LastOrDefault().Id, Orientation.V, new List<string>(Solutiontmp[firstSlideIndex].Photos.LastOrDefault().Tags))
                 };
-
                     List<Photo> secondSlidePhotos = new List<Photo>
                 {
                     new Photo(Solutiontmp[secondSlideIndex].Photos.FirstOrDefault().Id, Orientation.V, new List<string>(Solutiontmp[secondSlideIndex].Photos.FirstOrDefault().Tags)),
@@ -54,6 +61,7 @@ namespace PhotoSlideshow.Models
                     Solutiontmp[firstSlideIndex] = slideA;
                     Solutiontmp[secondSlideIndex] = slideB;
                 }
+
                 else if (swapOrChange < 7)
                 {
                     slidesToSwap = randomNumbers.OrderBy(x => random.Next()).Take(2).ToList();
@@ -79,15 +87,21 @@ namespace PhotoSlideshow.Models
             }
         }
 
-        public SolutionSlide ScatterSearch(List<Photo> seeds)
+        public SolutionSlide ScatterSearch(List<Photo> seeds, Stopwatch stopwatch, int timeToRun)
         {
             int initsize = 10;
-            int t = 500;
+            int t = 100;
+
+            double temp = 50;
+            double alpha = 0.999;
+            double epsilon = 0.0001;
 
             SolutionSlide best = new SolutionSlide();
             List<SolutionSlide> P = new List<SolutionSlide>();
+      
 
-            for (int i = 0; i < initsize; i++)
+
+            for (int i = 0; i < initsize && temp < epsilon && stopwatch.Elapsed.TotalMinutes < timeToRun; i++)
             {
                 P.Add(new SolutionSlide());
                 RandomSolutionGenerate(seeds, P[i]);
@@ -96,11 +110,17 @@ namespace PhotoSlideshow.Models
                 best.Slides = new List<Slide>(P.OrderByDescending(x => x.InterestFactor).FirstOrDefault().Slides);
                 best.InterestFactor = P.OrderByDescending(x => x.InterestFactor).FirstOrDefault().InterestFactor;
 
-                for (int j = 0; j < P.Count(); j++)
+                for (int j = 0; j < P.Count() && stopwatch.Elapsed.TotalMinutes < timeToRun; j++)
                 {
-                    HillClimbing(t, P[j]);
+                    int qualityS = P[j].InterestFactor;
+
+                    HillClimbing(t, P[j], stopwatch, timeToRun);
                     P[j].InterestFactor = CalculateInterestFactor(P[j].Slides);
-                    if (P[j].InterestFactor >= best.InterestFactor)
+
+                    Random random = new Random();
+                    double e = Math.Pow(Math.E, (P[j].InterestFactor - qualityS) / temp);
+
+                    if (P[j].InterestFactor >= best.InterestFactor || random.NextDouble() < e / 2)
                     {
                         best = new SolutionSlide(P[j].Slides)
                         {
@@ -108,8 +128,8 @@ namespace PhotoSlideshow.Models
                         };
                     }
                 }
+                temp *= alpha;
             }
-
             return best;
         }
 
@@ -143,6 +163,73 @@ namespace PhotoSlideshow.Models
                 slide.Slides.Add(new Slide(slideId, AddPhotos));
                 slideId++;
 
+            }
+        }
+        public void GenerateSolutionWithHeuristic(List<Photo> photos, Stopwatch stopwatch, int timeToRun, int divideNumber = 200)
+        {
+            Random random = new Random();
+
+            int slideId = 0;
+            int photosCount = photos.Count();
+
+            int normalizedValue = (int)Math.Ceiling((decimal)photosCount / divideNumber);
+
+            for (int i = 0; i < normalizedValue && stopwatch.Elapsed.TotalMinutes < timeToRun; i++)
+            {
+                List<Photo> tempPhotos = new List<Photo>(photos.Skip(i * divideNumber).Take(divideNumber));
+           
+                int tempPhotosCount = tempPhotos.Count();
+                int iterationCount = 0;
+
+                while (iterationCount  < tempPhotosCount && stopwatch.Elapsed.TotalMinutes < timeToRun)
+                {
+                    
+                    Photo photo;
+                   
+                    if (iterationCount != 0 && i != 0)
+                    {
+                        photo = tempPhotos.OrderByDescending(x =>
+                                            x.Tags.Where(t => !this.Slides.LastOrDefault().Tags.Contains(t)).Count() +
+                                            x.Tags.Where(t => this.Slides.LastOrDefault().Tags.Contains(t)).Count() +
+                                            this.Slides.LastOrDefault().Tags.Where(t => x.Tags.Contains(t)).Count())
+                                        .FirstOrDefault();
+                    }
+                   
+                    else
+                    {
+                        photo = tempPhotos.FirstOrDefault();
+                    }
+
+                    List<Photo> photosToAdd = new List<Photo>()
+                    {
+                        photo
+                    };
+
+                    if (photo.Orientation == Orientation.V)
+                    {
+                        Photo secondPhoto = tempPhotos
+                            .Where(x => x.Id != photo.Id && x.Orientation.Equals(Orientation.V))
+                            .OrderByDescending(x =>
+                                x.Tags.Where(t => !photo.Tags.Contains(t)).Count() +
+                                x.Tags.Where(t => photo.Tags.Contains(t)).Count() +
+                                photo.Tags.Where(t => x.Tags.Contains(t)).Count())
+                            .FirstOrDefault();
+                        
+                        if (secondPhoto != null)
+                        {
+                            photosToAdd.Add(secondPhoto);
+                            tempPhotos.Remove(secondPhoto);
+
+                            iterationCount++;
+                        }
+                    }
+                    
+                    this.Slides.Add(new Slide(slideId, photosToAdd));
+                    tempPhotos.Remove(photo);
+
+                    iterationCount++;
+                    slideId++;
+                }
             }
         }
 
